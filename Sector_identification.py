@@ -1,16 +1,58 @@
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
+import subprocess
+import sys
 import streamlit as st
 from datetime import datetime
+
+try:
+    import yfinance as yf
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "yfinance"])
+    import yfinance as yf
+    
+try:
+    import pandas as pd
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pandas"])
+    import pandas as pd
+    
+try:
+    import numpy as np
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "numpy"])
+    import numpy as np
+
+try:
+    from sklearn.manifold import TSNE
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "scikit-learn"])
+    from sklearn.manifold import TSNE
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib"])
+    import matplotlib.pyplot as plt
+
+
+try:
+    import plotly.express as px
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "plotly"])
+    import plotly.express as px
+    
+    
+# import yfinance as yf
+# import pandas as pd
+# import numpy as np
+# from sklearn.manifold import TSNE
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+# import plotly.express as px
 
 
 # Sidebar inputs for stock selection, date range, and rolling period
 # stocks = ['AAPL', 'GOOGL', 'TSLA', 'MSFT', 'NVDA', 'META', 'NFLX', 'SPCE']  # Example list of stocks
+
 stocks = [
     'ABB.NS', 'ABCAPITAL.NS', 'ABFRL.NS', 'ACC.NS', 'ADANIENT.NS', 'ADANIGREEN.NS', 'ADANIPORTS.NS', 'ADANIPOWER.NS',
     'AFFLE.NS', 'AJANTPHARM.NS', 'ALKEM.NS', 'AMBUJACEM.NS', 'APLAPOLLO.NS',
