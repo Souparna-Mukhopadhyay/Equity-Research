@@ -12,6 +12,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.stats.diagnostic import acorr_ljungbox
 from scipy.stats import boxcox
 from sklearn.metrics import r2_score
+from datetime import datetime
 
 # Function to calculate Heikin-Ashi close prices
 def heikin_ashi(df):
@@ -79,7 +80,7 @@ st.sidebar.title('NIFTY 200 Analysis Dashboard')
 selected_ticker = st.sidebar.selectbox("Select a Ticker", nifty50_tickers)
 
 st.sidebar.header("Date Range Selection")
-start_date = st.sidebar.date_input("Start Date")
+start_date = st.sidebar.date_input("Start Date",datetime(2024, 1, 1))
 end_date = st.sidebar.date_input("End Date")
 assert(end_date>=start_date)
 
