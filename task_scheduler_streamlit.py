@@ -114,14 +114,14 @@ st.title("Task Scheduler")
 if "logs" not in st.session_state:
     st.session_state.logs = []
 
-@st.fragment
-def my_fragment():
-    st.button("Refresh")
-    for item in st.session_state.logs:
-        st.write(item)
+# @st.fragment
+# def my_fragment():
+#     st.button("Refresh")
+for item in st.session_state.logs:
+    st.write(item)
     # st.write(f"Fragment says it ran {st.session_state.fragment_runs} times.")
 
-my_fragment()
+# my_fragment()
 ctx = get_script_run_ctx()
 
 thread = threading.Thread(target=schedule_tasks, args=((expanded_tasks,ctx),))
