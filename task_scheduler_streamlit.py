@@ -153,7 +153,7 @@ def schedule_tasks(args):
         add_row_to_schedule(cursor=cursor, function=func.__name__, native=0, time=start) 
     time.sleep(10)
     # st.session_state.logs.append(f"Whole routine is scheduled at {time_plus} of time zone {tz}")
-    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, local_timezone, formatted_time, args))
+    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, str(local_timezone), formatted_time, args))
     add_script_run_ctx(thread,ctx)
     thread.start()
     add_row_to_schedule(cursor=cursor, function=thread.name, native=thread.native_id, time=formatted_time)
