@@ -239,10 +239,10 @@ def example_function(arguments):
 
 # Initial list of tasks
 tasks = [
-    (example_function, 'Asia/Kolkata', '00:54:00', '20:55:00', 60),
-    (example_function, 'Asia/Kolkata', '00:56:00', None, None),
-    (example_function, 'Asia/Kolkata', '00:56:30', None, None),
-    (example_function, 'Asia/Kolkata', '00:55:30', None, None)
+    (example_function, 'Asia/Kolkata', '01:27:00', '01:29:00', 60),
+    (example_function, 'Asia/Kolkata', '01:27:00', None, None),
+    (example_function, 'Asia/Kolkata', '01:27:30', None, None),
+    (example_function, 'Asia/Kolkata', '01:28:30', None, None)
 ]
 
 # Expand and sort tasks
