@@ -1,4 +1,5 @@
 from streamlit.runtime.scriptrunner import add_script_run_ctx,get_script_run_ctx
+from tzlocal import get_localzone
 import streamlit as st
 import time
 import threading
@@ -140,13 +141,16 @@ def schedule_tasks(args):
     # Format the time in %H:%M:%S format
     formatted_time = time_plus.strftime("%H:%M:%S")
     
+    # get timezone
+    local_timezone = get_localzone()
+    
     for func, tz, start in tasks:
         # st.session_state.logs.append(f"{func.__name__} has been scheduled at {start} of time zone {tz}")
         threading.Thread(target=run_function_at_time, args=(func, tz, start, None)).start()
         add_row_to_schedule(cursor=cursor, function=func.__name__, native=0, time=start) 
     time.sleep(10)
     # st.session_state.logs.append(f"Whole routine is scheduled at {time_plus} of time zone {tz}")
-    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, tz, formatted_time, args))
+    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, local_timezone, formatted_time, args))
     add_script_run_ctx(thread,ctx)
     thread.start()
     add_row_to_schedule(cursor=cursor, function=thread.name, native=thread.native_id, time=formatted_time)
