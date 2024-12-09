@@ -103,7 +103,8 @@ def run_function_at_time(function, timezone, start_time, arguments):
     tz = ZoneInfo(timezone)
     # tz = pytz.timezone(timezone)
     now = datetime.now(tz)
-    target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
+    # target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
+    target_time = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time(), tz)
     
     # Adjust to the next day if the time has already passed
     if now > target_time:
@@ -241,10 +242,10 @@ def example_function(arguments):
 
 # Initial list of tasks
 tasks = [
-    (example_function, 'Asia/Kolkata', '01:27:00', '01:29:00', 60),
-    (example_function, 'Asia/Kolkata', '01:27:00', None, None),
-    (example_function, 'Asia/Kolkata', '01:27:30', None, None),
-    (example_function, 'Asia/Kolkata', '01:28:30', None, None)
+    (example_function, 'Asia/Kolkata', '01:40:00', '01:42:00', 60),
+    (example_function, 'Asia/Kolkata', '01:40:00', None, None),
+    (example_function, 'Asia/Kolkata', '01:41:30', None, None),
+    (example_function, 'Asia/Kolkata', '01:40:30', None, None)
 ]
 
 # Expand and sort tasks
