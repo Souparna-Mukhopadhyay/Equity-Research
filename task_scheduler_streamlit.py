@@ -5,6 +5,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 import pytz
+from zoneinfo import ZoneInfo
 import sqlite3
 import os
 
@@ -99,7 +100,8 @@ def run_function_at_time(function, timezone, start_time, arguments):
         timezone (str): Timezone for scheduling.
         start_time (str): Start time in "HH:MM:SS" format.
     """
-    tz = pytz.timezone(timezone)
+    tz = ZoneInfo(timezone)
+    # tz = pytz.timezone(timezone)
     now = datetime.now(tz)
     target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
     
