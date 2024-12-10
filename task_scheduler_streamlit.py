@@ -74,24 +74,35 @@ def expand_and_sort_tasks(tasks):
     
     for func, tz, start, end, interval in tasks:
         timezone = pytz.timezone(tz)
+        now = datetime.now(timezone)
         start_time = timezone.localize(datetime.combine(datetime.now(timezone).date(), datetime.strptime(start, "%H:%M:%S").time()))
         
         if interval is None or end is None:
             # Single-run task
-            single_run_tasks.append((func, tz, start))
+            if now > start_time:
+                start_time += timedelta(days=1)
+            single_run_tasks.append((func, tz, start_time))
         else:
             # Expand repeated tasks into multiple single-run tasks
             end_time = timezone.localize(datetime.combine(start_time.date(), datetime.strptime(end, "%H:%M:%S").time()))
+            assert(start_time<end_time)
+            if now > start_time:
+                start_time += timedelta(days=1)
+                end_time += timedelta(days=1)
             current_time = start_time
             while current_time <= end_time:
-                single_run_tasks.append((func, tz, current_time.strftime("%H:%M:%S")))
+                # single_run_tasks.append((func, tz, current_time.strftime("%H:%M:%S")))
+                single_run_tasks.append((func, tz, current_time))
                 current_time += timedelta(seconds=interval)
     
     # Sort tasks by chronological start time
-    single_run_tasks.sort(key=lambda task: datetime.strptime(task[2], "%H:%M:%S"))
+    # single_run_tasks.sort(key=lambda task: datetime.strptime(task[2], "%H:%M:%S"))
+    single_run_tasks.sort(key=lambda task: task[2])
+    
     return single_run_tasks
 
 def run_function_at_time(function, timezone, start_time, arguments):
+    
     """
     Run the function once at the specified time in the given timezone.
 
@@ -100,20 +111,21 @@ def run_function_at_time(function, timezone, start_time, arguments):
         timezone (str): Timezone for scheduling.
         start_time (str): Start time in "HH:MM:SS" format.
     """
+    
     # tz = ZoneInfo(timezone)
     tz = pytz.timezone(timezone)
     now = datetime.now(tz)
-    target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
+    # target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
     # target_time = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time(), tz)
     
     # Adjust to the next day if the time has already passed
-    if now > target_time:
-        target_time += timedelta(days=1)
     
-    wait_time = (target_time - now).total_seconds()
-    if wait_time > 0:
+    wait_time = (start_time - now).total_seconds()
+    if wait_time >= 0:
         time.sleep(wait_time)
-    function(arguments)
+        function(arguments)
+    else:
+        pass
 
 def schedule_tasks(args):
     """
@@ -134,18 +146,24 @@ def schedule_tasks(args):
     # Check and create the table if it doesn't exist
     check_and_create_table(cursor)
 
-    # print(tasks)
-    # Get the current time
-    current_time = datetime.now()
-
-    # Add 6 minutes to the current time
-    time_plus = current_time + timedelta(days=1)
-
-    # Format the time in %H:%M:%S format
-    formatted_time = time_plus.strftime("%H:%M:%S")
+    print(tasks)
     
+    # tz = pytz.timezone(tasks[-1][1])
+    # now = datetime.now(tz)
+    # target_time = tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
+    # tz.localize(datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M:%S").time()))
+    # Get the current time
+    # current_time = tz.localize(datetime.combine(now.date(), datetime.strptime(tasks[-1][2], "%H:%M:%S").time()))
+    # if now > current_time:
+    #     current_time += timedelta(days=1)
+    # Add 6 minutes to the current time
+    time_plus = tasks[-1][2] + timedelta(seconds=30)
+    # Format the time in %H:%M:%S format
+    # formatted_time = time_plus.strftime("%H:%M:%S")
     # get timezone
     local_timezone = get_localzone()
+    
+    # tasks[0][2]
     
     for func, tz, start in tasks:
         # st.session_state.logs.append(f"{func.__name__} has been scheduled at {start} of time zone {tz}")
@@ -153,11 +171,12 @@ def schedule_tasks(args):
         add_row_to_schedule(cursor=cursor, function=func.__name__, native=0, time=start) 
     time.sleep(10)
     # st.session_state.logs.append(f"Whole routine is scheduled at {time_plus} of time zone {tz}")
-    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, str(local_timezone), formatted_time, args))
+    thread = threading.Thread(target=run_function_at_time,args=(schedule_tasks, str(local_timezone), time_plus, args))
     add_script_run_ctx(thread,ctx)
     thread.start()
-    add_row_to_schedule(cursor=cursor, function=thread.name, native=thread.native_id, time=formatted_time)
+    add_row_to_schedule(cursor=cursor, function=thread.name, native=thread.native_id, time=time_plus)
     connection.commit()
+    connection.close()
     print(thread.native_id, thread.name)
 
 
@@ -234,7 +253,13 @@ def get_rows(cursor):
     
     except Exception as e:
         print(f"An error occurred: {e}")
-        
+
+def clear_schedule():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM schedule_0")
+    conn.commit()
+    conn.close()
         
 # Example usage
 def example_function(arguments):
@@ -242,11 +267,12 @@ def example_function(arguments):
 
 # Initial list of tasks
 tasks = [
-    (example_function, 'Asia/Kolkata', '02:00:00', '02:05:00', 60),
-    (example_function, 'Asia/Kolkata', '02:00:00', None, None),
-    (example_function, 'Asia/Kolkata', '02:02:30', None, None),
-    (example_function, 'Asia/Kolkata', '02:03:30', None, None)
+    (example_function, 'Asia/Kolkata', '17:51:00', '17:53:00', 60),
+    (example_function, 'Asia/Kolkata', '17:54:00', None, None),
+    (example_function, 'Asia/Kolkata', '17:54:30', None, None),
+    (example_function, 'Asia/Kolkata', '17:52:30', None, None)
 ]
+
 
 # Expand and sort tasks
 expanded_tasks = expand_and_sort_tasks(tasks)
@@ -266,22 +292,41 @@ check_and_create_table(cursor_)
 @st.fragment
 def my_fragment():
     st.button("Refresh")
-    st.write("logs")
+    # st.write("logs")
     connection__, cursor__ = get_or_create_database()
     rows = get_rows(cursor=cursor__)
     if rows != None:
         for row in rows:
             st.write(row)
+    connection__.close()
     # for item in st.session_state.logs:
     #     st.write(item)
     # st.write(f"Fragment says it ran {st.session_state.fragment_runs} times.")
     
 
-my_fragment()
 ctx = get_script_run_ctx()
 bool = is_thread_alive(cursor=cursor_)
+connection_.close()
 
 if bool == False:
     thread = threading.Thread(target=schedule_tasks, args=((expanded_tasks, ctx),))
     add_script_run_ctx(thread, ctx)
     thread.start()
+
+DB_FILE = "schedule.db"
+with st.sidebar:
+    st.title("Download Schedule")
+    with open(DB_FILE, "rb") as db_file:
+        st.download_button(
+            label="Download schedule",
+            data=db_file,
+            file_name="schedule.db",
+            mime="application/octet-stream",
+        )
+    
+    # if st.button("Clear Schedule"):
+    #     clear_schedule()
+    #     st.success("All rows in the `schedule_0` table have been deleted.")
+
+
+my_fragment()
