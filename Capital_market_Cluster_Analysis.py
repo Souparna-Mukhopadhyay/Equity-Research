@@ -67,7 +67,9 @@ if button or "form_submitted" not in st.session_state:
     
     # Download stock data
     data = yf.download(stocks, start=start_date, end=end_date)
+    data = data.dropna(axis=1, how='all')
 
+    
     # Calculate returns
     if analysis_type == 'Daily':
         returns = data['Close'].pct_change().dropna()
