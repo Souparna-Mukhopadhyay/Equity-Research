@@ -12,10 +12,10 @@ import plotly.express as px
 
 # Find the cluster for the selected ticker
 def get_cluster_for_symbol(symbol, clusters):
-    for cluster in clusters.values():
-        if symbol in cluster:
+    for cluster in clusters.items():
+        if symbol in cluster[1]:
             return cluster
-    return []
+    return ()
 
 
 def test_for_cluster(data_, cluster, symbol, start_date, end_date):
@@ -171,6 +171,7 @@ with st.sidebar.form("test"):
     symbol = st.selectbox("Select a Ticker", nifty50_tickers)
     start_date = st.date_input("Start Date", value=default_start_date)
     end_date = st.date_input("End Date", value=default_end_date)
+    n_samples = st.number_input("number of Bootstrapped samples", value = 1000)
     test = st.form_submit_button("Test Hypohesis")
 
 if not test:
@@ -222,7 +223,16 @@ else:
             # Filter data for conditions
             condition_high_met = data[data['Condition(B)']]
             # condition_low_met = data[data['Condition Low']]
-
+            
+            bootstrapped = []
+            for n_ in range(n_samples):
+                
+                sampled_df = condition_high_met.sample(n=int(len(condition_high_met)), replace=True)
+                total_samples_high_ = len(sampled_df)
+                higher_high_count_ = sampled_df['Higher High(A)'].sum()
+                probability_higher_high_ = (higher_high_count_ / total_samples_high_ * 100) if total_samples_high_ > 0 else 0
+                bootstrapped.append(probability_higher_high_)
+                
             # Higher High calculations
             total_samples_high = len(condition_high_met)
             higher_high_count = condition_high_met['Higher High(A)'].sum()
@@ -253,6 +263,7 @@ else:
             sigma = np.sqrt(prob*(1-prob)/total_samples_high)
             st.write(f"95% confidence interval estimatiopn of probablity lies between {(prob-1.96*sigma)*100:.2f}% - {(prob+1.96*sigma)*100:.2f}%")
             
+            
             # if probability_higher_high>=50:
             #     p_val = 1-norm.cdf(z_val)
             # else:
@@ -265,6 +276,9 @@ else:
                 st.write("Failed to reject H0 with 5% significance. P(A/B) = 50%")
             else:
                 st.write("H0 rejected with 5% significance. P(A/B) > 50%")
+                
+            
+            
                 
             data['Strategy return percentage'] = (data['Previous High']- data['Open'])*100/data['Open']
             data['Day return percentage'] = (data['Close']- data['Open'])*100/data['Open']
@@ -284,6 +298,31 @@ else:
             # st.dataframe(data[['High', 'Previous High', 'Two Days Ago High', 'Condition High', 'Higher High',  'Low',
             #                 'Previous Low', 'Two Days Ago Low', 'Condition Low', 'Lower Low']])
             st.dataframe(data[['High', 'Previous High', 'Two Days Ago High', 'Condition(B)', 'Higher High(A)', 'Strategy return percentage', 'Day return percentage']])
+            
+            
+            st.subheader("Bootstrapped result")
+            
+            df_means = pd.DataFrame({"Bootstrapped Means": bootstrapped})
+    
+            # Plot histogram
+            fig = px.histogram(df_means, x="Bootstrapped Means", nbins=30, title="Histogram of Bootstrapped Means")
+
+            # Step 3: Add vertical line at 0.5
+            fig.add_vline(x=50, line_color="red", line_dash="dash", annotation_text="Mean = 50", annotation_position="top right")
+
+            # Step 4: Calculate 95% confidence interval
+            lower_bound = np.percentile(bootstrapped, 2.5)
+            upper_bound = np.percentile(bootstrapped, 97.5)
+
+            # Step 5: Add confidence interval lines
+            fig.add_vline(x=lower_bound, line_color="blue", line_dash="dash", annotation_text=f"Lower 95% CI: {lower_bound:.3f}", annotation_position="bottom left")
+            fig.add_vline(x=upper_bound, line_color="blue", line_dash="dash", annotation_text=f"Upper 95% CI: {upper_bound:.3f}", annotation_position="bottom right")
+
+            # Display plot
+            st.plotly_chart(fig)
+
+            # Display confidence interval values
+            st.write(f"95% Confidence Interval: {lower_bound:.2f}% - {upper_bound:.2f}%")
 
             selected_cluster = get_cluster_for_symbol(symbol, seg)
 
@@ -294,14 +333,14 @@ else:
                 st.error(f"The symbol {symbol} does not belong to any predefined sectorial cluster.")
             else:
                 st.write(f"##### Q2: Knowing that the previous day sectorial mean (Mean of the returns of assets in the corresponding cluster) gain was positive do imply higher chance of higher high ?")
-                st.write(f"###### The symbol {symbol} belongs to the sectorial cluster consists of : \n {selected_cluster}")
+                st.write(f"###### The symbol {symbol} belongs to the sectorial cluster {selected_cluster[0]} consists of : \n {selected_cluster[1]}")
 
                 st.write("###### Let the event - previous day sectorial mean return positive be denoted by C")
                 st.write("###### H0: P(A/C) = 0.5 (50%)")
                 st.write("###### H1: P(A/C) > 0.5 (50%)")
                 # total_samples, higher_high_count, _, _ = p_val(selected_cluster, symbol, start_date, end_date)
                 cluster_data = {}
-                for ticker in selected_cluster:
+                for ticker in selected_cluster[1]:
                     # data = yf.download(ticker, start=start_date, end=end_date, interval="1d")
                     data = data_.loc[:, idx[:, ticker]]
                     data.columns = data.columns.droplevel(1)
@@ -336,12 +375,21 @@ else:
                     # filtered_data = symbol_data[symbol_data['Condition(B)'] & symbol_data['Cluster Positive(C)']]
                     filtered_data = symbol_data[symbol_data['Cluster Positive(C)']]
                     
-
+                    
+                    bootstrapped = []
+                    for n_ in range(n_samples):
+                
+                        sampled_df = filtered_data.sample(n=int(len(filtered_data)), replace=True)
+                        total_samples_high_ = len(sampled_df)
+                        higher_high_count_ = sampled_df['Higher High(A)'].sum()
+                        probability_higher_high_ = (higher_high_count_ / total_samples_high_ * 100) if total_samples_high_ > 0 else 0
+                        bootstrapped.append(probability_higher_high_)
+                        
                     # Calculate probability of higher high
                     
                     total_samples = len(filtered_data)
                     higher_high_count = filtered_data['Higher High(A)'].sum()
-                # if total_samples != None:
+                    # if total_samples != None:
                     probability_higher_high = (higher_high_count / total_samples * 100) if total_samples > 0 else 0
 
                     # Display results
@@ -361,6 +409,30 @@ else:
                     st.write("### Data Table")
                     st.dataframe(symbol_data[['High', 'Previous High', 'Two Days Ago High', 'Condition(B)',
                                                 'Previous Day Cluster Mean', 'Cluster Positive(C)','Open', 'Higher High(A)', 'strategy return percentage', 'day return percentage']])
+                    
+                    st.subheader("Bootstrapped result")
+            
+                    df_means = pd.DataFrame({"Bootstrapped Means": bootstrapped})
+    
+                    # Plot histogram
+                    fig = px.histogram(df_means, x="Bootstrapped Means", nbins=30, title="Histogram of Bootstrapped Means")
+
+                    # Step 3: Add vertical line at 0.5
+                    fig.add_vline(x=50, line_color="red", line_dash="dash", annotation_text="Mean = 50", annotation_position="top right")
+
+                    # Step 4: Calculate 95% confidence interval
+                    lower_bound = np.percentile(bootstrapped, 2.5)
+                    upper_bound = np.percentile(bootstrapped, 97.5)
+
+                    # Step 5: Add confidence interval lines
+                    fig.add_vline(x=lower_bound, line_color="blue", line_dash="dash", annotation_text=f"Lower 95% CI: {lower_bound:.3f}", annotation_position="bottom left")
+                    fig.add_vline(x=upper_bound, line_color="blue", line_dash="dash", annotation_text=f"Upper 95% CI: {upper_bound:.3f}", annotation_position="bottom right")
+
+                    # Display plot
+                    st.plotly_chart(fig)
+
+                    # Display confidence interval values
+                    st.write(f"95% Confidence Interval: {lower_bound:.2f}% - {upper_bound:.2f}%")
                     
                     # filtered_data = filtered_data[filtered_data['Open']< filtered_data['Previous High']]
                     # print(len(filtered_data))
