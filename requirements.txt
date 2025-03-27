@@ -9,3 +9,4 @@ statsmodels == 0.14.2
 yfinance == 0.2.54
 seaborn == 0.13.2
 tzlocal == 5.2
+cvxpy == 1.6.0
