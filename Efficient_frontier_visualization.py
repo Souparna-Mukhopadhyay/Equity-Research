@@ -37,9 +37,9 @@ def download_nse50_data(start_date, end_date, analysis_type):
     data = data.dropna(axis=1, how='all')
     
     # Calculate returns
-    if analysis_type == 'Daily':
+    if analysis_type == 'Daily return':
         returns = data['Close'].pct_change().dropna()
-    elif analysis_type == 'Daily Night':
+    elif analysis_type == 'Night return':
         returns = (data['Open'] - data['Close'].shift(1)) / data['Close'].shift(1)
     else:
         returns = (data['Close'] - data['Open']) / data['Open']
@@ -60,14 +60,19 @@ def optimize_portfolio(returns, target_return):
     
     return weights.value, weights.value @ mean_returns, problem.value
 
-st.sidebar.header("NSE 50 Portfolio Optimization")
+st.sidebar.header("Efficient Frontier visualization with NSE 200 assets")
 with st.sidebar.form("Segmentation"):
+    st.write("Note: Day return is the return during trading hours.\n Night return is the return during previous night.\n Daily return is combination of day and night return")
     start_date = st.date_input("Select start date", datetime(2023, 1, 1))
     end_date = st.date_input("Select end date", datetime(2024, 12, 31))
-    analysis_type = st.selectbox("Choose Return Type", ['Daily Day', 'Daily Night', 'Daily'])
+    analysis_type = st.selectbox("Choose Return Type", ['Day return', 'Night return', 'Daily return'])
     button = st.form_submit_button("Apply Changes")
 # start_date = st.sidebar.date_input("Start Date", pd.to_datetime("2023-01-01"))
 # end_date = st.sidebar.date_input("End Date", pd.to_datetime("2024-01-01"))
+
+st.write("Note: This visualization plots Daily mean percent return vs risk as the varience of percent returns.")
+st.write("Standard daviation of percent returns are available on hovering on the data points.")
+st.write("Use zoom, pan tools to adjust visualization.")
 
 
 if button or "form_submitted" not in st.session_state:
@@ -95,7 +100,7 @@ if button or "form_submitted" not in st.session_state:
 
     fig = px.line(
         x=solutions[:, 1], y=solutions[:, 0], markers=True,
-        labels={"x": "Variance", "y": "Mean Return (%)"}, title="Efficient Frontier",
+        labels={"x": "Risk (Variance of percent return)", "y": "Mean Return (%)"}, title="Efficient Frontier",
         hover_data={"Standard deviation(%)":np.round(np.sqrt(solutions[:, 1])*100, 2)}
     )
     fig.add_scatter(
